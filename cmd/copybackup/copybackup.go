@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	var debug DebugT
+	var debug copybackup.DebugT
 
 	var root string
 	var e error
@@ -19,7 +19,7 @@ func main() {
 
 	g := flag.Int("g", -1, "バックアップする世代。")
 	b := flag.String("b", "_old", "バックアップを保存する先。絶対パスでの指定も可能。 ([デフォルト _old])")
-	s := flag.Int("s", 60*5, "バックアップ間s。 (秒 [デフォルト 5分])")
+	s := flag.Int("s", 60*5, "バックアップ間隔。 (秒 [デフォルト 5分])")
 	flag.Parse()
 
 	debug.Println("g = ", *g)
@@ -32,7 +32,7 @@ func main() {
 		root = flag.Arg(0)
 	} else {
 		root, e = os.Getwd()
-		FailOnError(e)
+		copybackup.FailOnError(e)
 		flag.Usage()
 		os.Exit(1)
 	}
@@ -40,13 +40,13 @@ func main() {
 	debug.PrintValue("root", root)
 
 	files, e := ioutil.ReadDir(root)
-	FailOnError(e)
+	copybackup.FailOnError(e)
 
 	for _, f := range files {
 		if !f.IsDir() {
 			src := filepath.Join(root, f.Name())
 			dst, e := copybackup.MakeDstPath(src, "_old")
-			FailOnError(e)
+			copybackup.FailOnError(e)
 			wg.Add(1)
 			go func(src, dst string) {
 				defer wg.Done()

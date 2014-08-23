@@ -1,3 +1,3 @@
-package main
+package copybackup
 
 var GetFileList = getFileList
