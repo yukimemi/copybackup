@@ -1,35 +1,32 @@
-package main
+package copybackup
 
 import ( // {{{
-	"flag"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 	"time"
 ) // }}}
 
 // for debug {{{
-type debugT bool
+type DebugT bool
 
-var debug = debugT(true)
+var debug = DebugT(true)
 
-func (d debugT) Println(args ...interface{}) { // {{{
+func (d DebugT) Println(args ...interface{}) { // {{{
 	if d {
 		log.Println(args...)
 	}
 } // }}}
 
-func (d debugT) Printf(format string, v ...interface{}) { // {{{
+func (d DebugT) Printf(format string, v ...interface{}) { // {{{
 	if d {
 		log.Printf(format, v...)
 	}
 } // }}}
 
-func (d debugT) PrintValue(vs string, v interface{}) { // {{{
+func (d DebugT) PrintValue(vs string, v interface{}) { // {{{
 	if d {
 		log.Printf("%s = [%s]", vs, v)
 	}
@@ -46,71 +43,24 @@ func un(s string) { // {{{
 
 // }}}
 
-func failOnError(e error) { // {{{
+func FailOnError(e error) { // {{{
 	if e != nil {
 		log.Fatal("Error:", e)
 	}
 } // }}}
 
-type options struct {
+type Options struct {
 	path       string
 	generation int
 	backup     string
 	sleep      int
 }
 
-func NewOptions(path string, generation int, backup string, sleep int) *options {
-	return &options{path, generation, backup, sleep}
+func NewOptions(path string, generation int, backup string, sleep int) *Options {
+	return &Options{path, generation, backup, sleep}
 }
 
-func main() {
-	defer un(trace("main"))
-
-	var root string
-	var e error
-	var wg sync.WaitGroup
-
-	g := flag.Int("g", -1, "バックアップする世代。")
-	b := flag.String("b", "_old", "バックアップを保存する先。絶対パスでの指定も可能。 ([デフォルト _old])")
-	s := flag.Int("s", 60*5, "バックアップ間s。 (秒 [デフォルト 5分])")
-	flag.Parse()
-
-	debug.Println("g = ", *g)
-	debug.Println("b = ", *b)
-	debug.Println("s = ", *s)
-
-	debug.PrintValue("args", flag.Args())
-	debug.PrintValue("args", os.Args)
-	if flag.NArg() != 0 {
-		root = flag.Arg(0)
-	} else {
-		root, e = os.Getwd()
-		failOnError(e)
-		flag.Usage()
-		os.Exit(1)
-	}
-
-	debug.PrintValue("root", root)
-
-	files, e := ioutil.ReadDir(root)
-	failOnError(e)
-
-	for _, f := range files {
-		if !f.IsDir() {
-			src := filepath.Join(root, f.Name())
-			dst, e := makeDstPath(src, "_old")
-			failOnError(e)
-			wg.Add(1)
-			go func(src, dst string) {
-				defer wg.Done()
-				backup(src, dst)
-			}(src, dst)
-		}
-		wg.Wait()
-	}
-}
-
-func makeDstPath(path, bkpath string) (string, error) {
+func MakeDstPath(path, bkpath string) (string, error) {
 	_, e := os.Stat(path)
 	parent, base := filepath.Split(path)
 	ext := filepath.Ext(base)
@@ -121,13 +71,13 @@ func makeDstPath(path, bkpath string) (string, error) {
 	return dst, e
 }
 
-func backup(src, dst string) {
+func Backup(src, dst string) {
 	dstParent := filepath.Dir(dst)
 	os.MkdirAll(dstParent, 0755)
 	e := cp(dst, src)
 	debug.PrintValue("src", src)
 	debug.PrintValue("dst", dst)
-	failOnError(e)
+	FailOnError(e)
 }
 
 func cp(dst, src string) error {
