@@ -2,52 +2,13 @@ package copybackup
 
 import ( // {{{
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	core "github.com/yukimemi/gocore"
 ) // }}}
-
-// for debug {{{
-type DebugT bool
-
-var debug = DebugT(true)
-
-func (d DebugT) Println(args ...interface{}) { // {{{
-	if d {
-		log.Println(args...)
-	}
-} // }}}
-
-func (d DebugT) Printf(format string, v ...interface{}) { // {{{
-	if d {
-		log.Printf(format, v...)
-	}
-} // }}}
-
-func (d DebugT) PrintValue(vs string, v interface{}) { // {{{
-	if d {
-		log.Printf("%s = [%s]", vs, v)
-	}
-} // }}}
-
-func trace(s string) string { // {{{
-	debug.Println("ENTER:", s)
-	return s
-} // }}}
-
-func un(s string) { // {{{
-	debug.Println("LEAVE:", s)
-} // }}}
-
-// }}}
-
-func FailOnError(e error) { // {{{
-	if e != nil {
-		log.Fatal("Error:", e)
-	}
-} // }}}
 
 type Options struct {
 	path       string
@@ -72,12 +33,13 @@ func MakeDstPath(path, bkpath string) (string, error) {
 }
 
 func Backup(src, dst string) {
+	var e error
 	dstParent := filepath.Dir(dst)
-	os.MkdirAll(dstParent, 0755)
-	e := cp(dst, src)
-	debug.PrintValue("src", src)
-	debug.PrintValue("dst", dst)
-	FailOnError(e)
+	e = os.MkdirAll(dstParent, os.ModePerm)
+	core.FailOnError(e)
+	core.Logger.Infof("%s -> %s", src, dst)
+	e = cp(dst, src)
+	core.FailOnError(e)
 }
 
 func cp(dst, src string) error {
