@@ -1,18 +1,20 @@
 package main
 
 import (
-	"flag"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sync"
 
-	"github.com/umisama/golog"
+	"github.com/jessevdk/go-flags"
 	cb "github.com/yukimemi/copybackup"
 	core "github.com/yukimemi/gocore"
 )
 
 type Options struct {
+	Generation int    `short:"g" long:"generation" description:"バックアップする世代。"`
+	BackupDst  string `short:"b" long:"backup" description:"" `
+	Sleep      int    `short:"s" long:"sleep" description:"バックアップ間隔。 (秒 [デフォルト 5分])"`
 }
 
 func main() {
@@ -22,21 +24,20 @@ func main() {
 	var e error
 	var wg sync.WaitGroup
 
-	g := flag.Int("g", -1, "バックアップする世代。")
-	b := flag.String("b", "_old", "バックアップを保存する先。絶対パスでの指定も可能。 ([デフォルト _old])")
-	s := flag.Int("s", 60*5, "バックアップ間隔。 (秒 [デフォルト 5分])")
+	opts := &Options{}
+	p := flags.NewParser(opts, flags.PrintErrors)
 
 	core.Logger.Debugf("g = %d", *g)
 	core.Logger.Debugf("b = %s", *b)
 	core.Logger.Debugf("s = %d", *s)
-	flag.Parse()
+	flags.Parse()
 
-	if flag.NArg() != 0 {
-		root = flag.Arg(0)
+	if flags.NArg() != 0 {
+		root = flags.Arg(0)
 	} else {
 		root, e = os.Getwd()
 		core.FailOnError(e)
-		flag.Usage()
+		flags.Usage()
 		os.Exit(0)
 	}
 
