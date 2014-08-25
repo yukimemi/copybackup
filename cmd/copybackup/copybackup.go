@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/jessevdk/go-flags"
+	"github.com/umisama/golog"
 	cb "github.com/yukimemi/copybackup"
 	core "github.com/yukimemi/gocore"
 )
@@ -25,21 +26,16 @@ func main() {
 	var wg sync.WaitGroup
 
 	opts := &Options{}
-	p := flags.NewParser(opts, flags.PrintErrors)
+	parser := flags.NewParser(opts, flags.Default)
+	args, e := parser.Parse()
+	core.FailOnError(e)
 
-	core.Logger.Debugf("g = %d", *g)
-	core.Logger.Debugf("b = %s", *b)
-	core.Logger.Debugf("s = %d", *s)
-	flags.Parse()
-
-	if flags.NArg() != 0 {
-		root = flags.Arg(0)
-	} else {
-		root, e = os.Getwd()
-		core.FailOnError(e)
-		flags.Usage()
+	if len(args) == 0 {
+		parser.WriteHelp(os.Stderr)
 		os.Exit(0)
 	}
+
+	root = args[0]
 
 	files, e := ioutil.ReadDir(root)
 	core.FailOnError(e)
