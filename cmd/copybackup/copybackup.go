@@ -24,8 +24,7 @@ func main() {
 
 	var e error
 	var wg sync.WaitGroup
-
-	cg := &cb.CopyGroup{}
+	var cg *cb.CopyGroup
 
 	opts := &Options{}
 	parser := flags.NewParser(opts, flags.Default)
