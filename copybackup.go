@@ -1,6 +1,7 @@
 package copybackup
 
 import ( // {{{
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -10,39 +11,51 @@ import ( // {{{
 	core "github.com/yukimemi/gocore"
 ) // }}}
 
-type Options struct {
-	path       string
+type CopyGroup struct { // {{{
+	src        string
+	dst        string
+	bkpath     string
 	generation int
-	backup     string
 	sleep      int
-}
+} // }}}
 
-func NewOptions(path string, generation int, backup string, sleep int) *Options {
-	return &Options{path, generation, backup, sleep}
-}
+func makeDstPath(src, bkpath string) (string, error) { // {{{
+	var dst string
 
-func MakeDstPath(path, bkpath string) (string, error) {
-	_, e := os.Stat(path)
-	parent, base := filepath.Split(path)
+	f, e := os.Stat(src)
+	if e == nil && f.IsDir() {
+		// core.Logger.Warnf("%s is Directory !", src)
+		return "", fmt.Errorf("%s is Directory !", src)
+	}
+	parent, base := filepath.Split(src)
 	ext := filepath.Ext(base)
 	basename := strings.TrimSuffix(base, ext)
 	now := time.Now()
-	dst := filepath.Join(parent, bkpath, basename+"_"+now.Format("20060102_150405")+ext)
+	if filepath.IsAbs(bkpath) {
+		dst = filepath.Join(bkpath, basename+"_"+now.Format("20060102-150405")+ext)
+	} else {
+		dst = filepath.Join(parent, bkpath, basename+"_"+now.Format("20060102-150405")+ext)
+	}
 
 	return dst, e
-}
+} // }}}
 
-func Backup(src, dst string) {
+func NewCopyGroup(src, bkpath string, generation, sleep int) *CopyGroup { // {{{
+	dst, e := makeDstPath(src, bkpath)
+	core.FailOnError(e)
+	return &CopyGroup{src, dst, bkpath, generation, sleep}
+} // }}}
+
+func (cg *CopyGroup) Backup() error { // {{{
 	var e error
-	dstParent := filepath.Dir(dst)
+	dstParent := filepath.Dir(cg.dst)
 	e = os.MkdirAll(dstParent, os.ModePerm)
 	core.FailOnError(e)
-	core.Logger.Infof("%s -> %s", src, dst)
-	e = cp(dst, src)
-	core.FailOnError(e)
-}
+	core.Logger.Infof("%s -> %s", cg.src, cg.dst)
+	return cp(cg.dst, cg.src)
+} // }}}
 
-func cp(dst, src string) error {
+func cp(dst, src string) error { // {{{
 	// https://gist.github.com/elazarl/5507969
 	s, err := os.Open(src)
 	if err != nil {
@@ -60,4 +73,4 @@ func cp(dst, src string) error {
 		return err
 	}
 	return d.Close()
-}
+} // }}}

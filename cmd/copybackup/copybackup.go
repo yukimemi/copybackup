@@ -13,17 +13,19 @@ import (
 )
 
 type Options struct {
-	Generation int    `short:"g" long:"generation" description:"バックアップする世代。"`
-	BackupDst  string `short:"b" long:"backup" description:"" `
-	Sleep      int    `short:"s" long:"sleep" description:"バックアップ間隔。 (秒 [デフォルト 5分])"`
+	Generation int    `short:"g" long:"generation" description:"バックアップする世代。 (デフォルト [5])" default:"5"`
+	BackupDst  string `short:"b" long:"backup" description:"バックアップを保存する先。 (デフォルト [_old])" default:"_old"`
+	Sleep      int    `short:"s" long:"sleep" description:"バックアップ間隔。 (秒 [デフォルト 5分])" default:"60*5"`
+	Csv        string `short:"c" long:"csv" description:"設定ファイルから読み込み。(csvファイル)"`
 }
 
 func main() {
 	core.Logger, _ = log.NewLogger(os.Stdout, log.TIME_FORMAT_SEC, log.LOG_FORMAT_POWERFUL, log.LogLevel_Debug)
 
-	var root string
 	var e error
 	var wg sync.WaitGroup
+
+	cg := &cb.CopyGroup{}
 
 	opts := &Options{}
 	parser := flags.NewParser(opts, flags.Default)
@@ -35,22 +37,30 @@ func main() {
 		os.Exit(0)
 	}
 
-	root = args[0]
-
-	files, e := ioutil.ReadDir(root)
-	core.FailOnError(e)
-
-	for _, f := range files {
-		if !f.IsDir() {
-			src := filepath.Join(root, f.Name())
-			dst, e := cb.MakeDstPath(src, "_old")
+	for _, arg := range args {
+		if f, _ := os.Stat(arg); f.IsDir() {
+			files, e := ioutil.ReadDir(arg)
 			core.FailOnError(e)
+			for _, f := range files {
+				if !f.IsDir() {
+					cg = cb.NewCopyGroup(filepath.Join(arg, f.Name()), opts.BackupDst, opts.Generation, opts.Sleep)
+					wg.Add(1)
+					go func() {
+						defer wg.Done()
+						cg.Backup()
+					}()
+				}
+			}
+
+		} else {
+			cg = cb.NewCopyGroup(arg, opts.BackupDst, opts.Generation, opts.Sleep)
 			wg.Add(1)
-			go func(src, dst string) {
+			go func() {
 				defer wg.Done()
-				cb.Backup(src, dst)
-			}(src, dst)
+				cg.Backup()
+			}()
 		}
-		wg.Wait()
 	}
+	wg.Wait()
+
 }
