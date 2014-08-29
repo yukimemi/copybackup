@@ -13,9 +13,9 @@ import (
 )
 
 type Options struct {
-	Generation int    `short:"g" long:"generation" description:"バックアップする世代。 (デフォルト [5])" default:"5"`
-	BackupDst  string `short:"b" long:"backup" description:"バックアップを保存する先。 (デフォルト [_old])" default:"_old"`
-	Sleep      int    `short:"s" long:"sleep" description:"バックアップ間隔。 (秒 [デフォルト 5分])" default:"60*5"`
+	Generation int    `short:"g" long:"generation" description:"バックアップする世代。" default:"5"`
+	BackupDst  string `short:"b" long:"backup" description:"バックアップを保存する先。" default:"_old"`
+	Sleep      int    `short:"s" long:"sleep" description:"バックアップ間隔。" default:"60*5"`
 	Csv        string `short:"c" long:"csv" description:"設定ファイルから読み込み。(csvファイル)"`
 }
 
@@ -26,7 +26,7 @@ func main() {
 	var wg sync.WaitGroup
 	var cg *cb.CopyGroup
 
-	opts := &Options{}
+	opts := new(Options)
 	parser := flags.NewParser(opts, flags.Default)
 	args, e := parser.Parse()
 	core.FailOnError(e)
@@ -37,7 +37,7 @@ func main() {
 	}
 
 	for _, arg := range args {
-		if f, _ := os.Stat(arg); f.IsDir() {
+		if f, e := os.Stat(arg); f.IsDir() {
 			files, e := ioutil.ReadDir(arg)
 			core.FailOnError(e)
 			for _, f := range files {
@@ -50,7 +50,8 @@ func main() {
 					}()
 				}
 			}
-
+		} else if e != nil {
+			core.FailOnError(e)
 		} else {
 			cg = cb.NewCopyGroup(arg, opts.BackupDst, opts.Generation, opts.Sleep)
 			wg.Add(1)

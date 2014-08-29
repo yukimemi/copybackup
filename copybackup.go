@@ -3,8 +3,10 @@ package copybackup
 import ( // {{{
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -24,7 +26,6 @@ func makeDstPath(src, bkpath string) (string, error) { // {{{
 
 	f, e := os.Stat(src)
 	if e == nil && f.IsDir() {
-		// core.Logger.Warnf("%s is Directory !", src)
 		return "", fmt.Errorf("%s is Directory !", src)
 	}
 	parent, base := filepath.Split(src)
@@ -51,8 +52,114 @@ func (cg *CopyGroup) Backup() error { // {{{
 	dstParent := filepath.Dir(cg.dst)
 	e = os.MkdirAll(dstParent, os.ModePerm)
 	core.FailOnError(e)
+	latestFile, e := cg.getLatestFile()
+	core.FailOnError(e)
+	if latestFile != "" {
+		l, _ := os.Stat(latestFile)
+		s, _ := os.Stat(cg.src)
+		core.Logger.Debug("cg.src ModTime = ", s.ModTime().Format(time.StampMilli))
+		core.Logger.Debug("latestFile ModTime = ", l.ModTime().Format(time.StampMilli))
+		if l.ModTime().Equal(s.ModTime()) {
+			core.Logger.Debugf("[%s] is same as [%s]", cg.src, latestFile)
+			return nil
+		}
+	}
 	core.Logger.Infof("%s -> %s", cg.src, cg.dst)
-	return cp(cg.dst, cg.src)
+	e = cp(cg.dst, cg.src)
+	cg.deleteOldFile()
+	return e
+} // }}}
+
+func (cg *CopyGroup) deleteOldFile() { // {{{
+	if cg.generation != -1 {
+		for {
+			if cg.countMatchFiles() > cg.generation {
+				oldestFile, e := cg.getOldestFile()
+				core.FailOnError(e)
+				os.Remove(oldestFile)
+			} else {
+				break
+			}
+		}
+	}
+} // }}}
+
+func (cg *CopyGroup) countMatchFiles() int { // {{{
+	var count int
+
+	basename := core.GetBaseName(cg.src)
+	ext := filepath.Ext(cg.src)
+	matchs := `^` + basename + `_[0-9]{8}-[0-9]{6}` + ext + `$`
+
+	files, e := ioutil.ReadDir(filepath.Dir(cg.dst))
+	core.FailOnError(e)
+
+	for _, file := range files {
+		m, e := regexp.MatchString(matchs, file.Name())
+		core.FailOnError(e)
+		if m {
+			count++
+		}
+	}
+	return count
+} // }}}
+
+func (cg *CopyGroup) getLatestFile() (string, error) { // {{{
+	var latestFile os.FileInfo
+	var e error
+
+	basename := core.GetBaseName(cg.src)
+	ext := filepath.Ext(cg.src)
+	matchs := `^` + basename + `_[0-9]{8}-[0-9]{6}` + ext + `$`
+
+	dstDir := filepath.Dir(cg.dst)
+	files, e := ioutil.ReadDir(dstDir)
+	core.FailOnError(e)
+
+	if len(files) == 0 {
+		return "", nil
+	}
+
+	latestFile = files[0]
+	for _, file := range files {
+		m, e := regexp.MatchString(matchs, file.Name())
+		core.FailOnError(e)
+		if m {
+			if latestFile.ModTime().Before(file.ModTime()) {
+				latestFile = file
+			}
+		}
+	}
+	return filepath.Join(dstDir, latestFile.Name()), e
+} // }}}
+
+func (cg *CopyGroup) getOldestFile() (string, error) { // {{{
+	var oldestFile os.FileInfo
+	var e error
+
+	basename := core.GetBaseName(cg.src)
+	ext := filepath.Ext(cg.src)
+	matchs := `^` + basename + `_[0-9]{8}-[0-9]{6}` + ext + `$`
+
+	dstDir := filepath.Dir(cg.dst)
+	files, e := ioutil.ReadDir(dstDir)
+	core.FailOnError(e)
+
+	if len(files) == 0 {
+		return "", nil
+	}
+
+	oldestFile = files[0]
+	for _, file := range files {
+		m, e := regexp.MatchString(matchs, file.Name())
+		core.FailOnError(e)
+		if m {
+			if oldestFile.ModTime().After(file.ModTime()) {
+				oldestFile = file
+			}
+		}
+	}
+	return filepath.Join(dstDir, oldestFile.Name()), e
 } // }}}
 
 func cp(dst, src string) error { // {{{
