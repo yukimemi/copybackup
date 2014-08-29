@@ -32,23 +32,22 @@ deploy:
         tag: $RELEASE_TAG
     - wercker/github-upload-asset:
         token: $GITHUB_TOKEN
-        file: snapshot/peco_linux_386.tar.gz
+        file: snapshot/copybackup_linux_386.tar.gz
     - wercker/github-upload-asset:
         token: $GITHUB_TOKEN
-        file: snapshot/peco_linux_amd64.tar.gz
+        file: snapshot/copybackup_linux_amd64.tar.gz
     - wercker/github-upload-asset:
         token: $GITHUB_TOKEN
-        file: snapshot/peco_linux_arm.tar.gz
+        file: snapshot/copybackup_linux_arm.tar.gz
     - wercker/github-upload-asset:
         token: $GITHUB_TOKEN
-        file: snapshot/peco_darwin_386.zip
+        file: snapshot/copybackup_darwin_386.zip
     - wercker/github-upload-asset:
         token: $GITHUB_TOKEN
-        file: snapshot/peco_darwin_amd64.zip
+        file: snapshot/copybackup_darwin_amd64.zip
     - wercker/github-upload-asset:
         token: $GITHUB_TOKEN
-        file: snapshot/peco_windows_386.zip
+        file: snapshot/copybackup_windows_386.zip
     - wercker/github-upload-asset:
         token: $GITHUB_TOKEN
-        file: snapshot/peco_windows_amd64.zip
-    - lestrrat/peco-update-homebrew
+        file: snapshot/copybackup_windows_amd64.zip
