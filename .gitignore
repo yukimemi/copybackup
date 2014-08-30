@@ -23,3 +23,7 @@ _testmain.go
 *.test
 
 _old/
+
+# godep
+Godeps/Readme
+Godeps/_workspace

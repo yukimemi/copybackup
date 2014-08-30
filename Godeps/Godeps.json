@@ -1,0 +1,14 @@
+{
+	"ImportPath": "github.com/yukimemi/copybackup",
+	"GoVersion": "go1.3",
+	"Deps": [
+		{
+			"ImportPath": "github.com/umisama/golog",
+			"Rev": "4ebae395687aca5427e6ac844c38cf0ca033e8c3"
+		},
+		{
+			"ImportPath": "github.com/yukimemi/gocore",
+			"Rev": "fad31d4d88390b3fd639ed4a0e478843ab93d8ba"
+		}
+	]
+}
