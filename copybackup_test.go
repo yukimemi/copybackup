@@ -23,8 +23,9 @@ var latestFileExpected string
 func init() { // {{{
 	core.Logger, _ = log.NewLogger(os.Stdout, log.TIME_FORMAT_SEC, log.LOG_FORMAT_POWERFUL, log.LogLevel_Debug)
 	pwd, _ := os.Getwd()
+	src := filepath.Join(pwd, THIS_FILE_NAME)
 	files = make([]string, 0)
-	cg = NewCopyGroup(filepath.Join(pwd, THIS_FILE_NAME), "_old", GENERATION, 60)
+	cg = NewCopyGroup(src, "_old", GENERATION, 60)
 	dstDir := filepath.Dir(cg.dst)
 	if _, e := os.Stat(dstDir); e == nil {
 		os.RemoveAll(dstDir)
@@ -32,8 +33,9 @@ func init() { // {{{
 	os.MkdirAll(dstDir, os.ModePerm)
 
 	for i := 0; i < TEST_FILES_COUNT; i++ {
-		cg = NewCopyGroup(filepath.Join(pwd, THIS_FILE_NAME), "_old", GENERATION, 60)
+		cg = NewCopyGroup(src, "_old", GENERATION, 60)
 		cp(cg.dst, cg.src)
+		os.Chtimes(cg.dst, time.Now(), time.Now())
 		if i == 0 {
 			oldestFileExpected = cg.dst
 		} else if i == TEST_FILES_COUNT-1 {
@@ -106,7 +108,7 @@ func TestGetLatestFile(t *testing.T) { // {{{
 func TestDeleteOldFile1(t *testing.T) { // {{{
 	pwd, _ := os.Getwd()
 	cg := NewCopyGroup(filepath.Join(pwd, THIS_FILE_NAME), "_old", -1, 60)
-	cg.deleteOldFile()
+	cg.DeleteOldFile()
 	count := cg.countMatchFiles()
 	expected := TEST_FILES_COUNT
 
@@ -116,7 +118,7 @@ func TestDeleteOldFile1(t *testing.T) { // {{{
 } // }}}
 
 func TestDeleteOldFile2(t *testing.T) { // {{{
-	cg.deleteOldFile()
+	cg.DeleteOldFile()
 	count := cg.countMatchFiles()
 	expected := GENERATION
 
@@ -125,12 +127,13 @@ func TestDeleteOldFile2(t *testing.T) { // {{{
 	}
 } // }}}
 
-func TestBackup(t *testing.T) {
+func TestBackup(t *testing.T) { // {{{
+	cg := NewCopyGroup(cg.src, cg.bkpath, cg.generation, cg.sleep)
 	cg.Backup()
 	count := cg.countMatchFiles()
-	expected := GENERATION
+	expected := GENERATION + 1
 
 	if count != expected {
 		t.Errorf("expected = [%d] but count = [%d]", expected, count)
 	}
-}
+} // }}}

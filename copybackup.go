@@ -57,20 +57,16 @@ func (cg *CopyGroup) Backup() error { // {{{
 	if latestFile != "" {
 		l, _ := os.Stat(latestFile)
 		s, _ := os.Stat(cg.src)
-		core.Logger.Debug("cg.src ModTime = ", s.ModTime().Format(time.StampMilli))
-		core.Logger.Debug("latestFile ModTime = ", l.ModTime().Format(time.StampMilli))
 		if l.ModTime().Equal(s.ModTime()) {
 			core.Logger.Debugf("[%s] is same as [%s]", cg.src, latestFile)
 			return nil
 		}
 	}
 	core.Logger.Infof("%s -> %s", cg.src, cg.dst)
-	e = cp(cg.dst, cg.src)
-	cg.deleteOldFile()
-	return e
+	return cp(cg.dst, cg.src)
 } // }}}
 
-func (cg *CopyGroup) deleteOldFile() { // {{{
+func (cg *CopyGroup) DeleteOldFile() { // {{{
 	if cg.generation != -1 {
 		for {
 			if cg.countMatchFiles() > cg.generation {
@@ -164,20 +160,21 @@ func (cg *CopyGroup) getOldestFile() (string, error) { // {{{
 
 func cp(dst, src string) error { // {{{
 	// https://gist.github.com/elazarl/5507969
-	s, err := os.Open(src)
-	if err != nil {
-		return err
-	}
+	s, e := os.Open(src)
+	core.FailOnError(e)
+	sinfo, e := os.Stat(src)
+	core.FailOnError(e)
+
 	// no need to check errors on read only file, we already got everything
 	// we need from the filesystem, so nothing can go wrong now.
 	defer s.Close()
-	d, err := os.Create(dst)
-	if err != nil {
-		return err
+	d, e := os.Create(dst)
+	defer d.Close()
+	if e != nil {
+		return e
 	}
-	if _, err := io.Copy(d, s); err != nil {
-		d.Close()
-		return err
+	if _, e := io.Copy(d, s); e != nil {
+		return e
 	}
-	return d.Close()
+	return os.Chtimes(dst, sinfo.ModTime(), sinfo.ModTime())
 } // }}}

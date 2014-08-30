@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sync"
 
 	"github.com/jessevdk/go-flags"
@@ -24,7 +25,9 @@ func main() {
 
 	var e error
 	var wg sync.WaitGroup
-	var cg *cb.CopyGroup
+
+	cpus := runtime.NumCPU()
+	semaphore := make(chan int, cpus)
 
 	opts := new(Options)
 	parser := flags.NewParser(opts, flags.Default)
@@ -42,25 +45,30 @@ func main() {
 			core.FailOnError(e)
 			for _, f := range files {
 				if !f.IsDir() {
-					cg = cb.NewCopyGroup(filepath.Join(arg, f.Name()), opts.BackupDst, opts.Generation, opts.Sleep)
 					wg.Add(1)
 					go func() {
 						defer wg.Done()
+						semaphore <- 1
+						cg := cb.NewCopyGroup(filepath.Join(arg, f.Name()), opts.BackupDst, opts.Generation, opts.Sleep)
 						cg.Backup()
+						cg.DeleteOldFile()
+						<-semaphore
 					}()
 				}
 			}
 		} else if e != nil {
 			core.FailOnError(e)
 		} else {
-			cg = cb.NewCopyGroup(arg, opts.BackupDst, opts.Generation, opts.Sleep)
+			cg := cb.NewCopyGroup(arg, opts.BackupDst, opts.Generation, opts.Sleep)
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
+				semaphore <- 1
 				cg.Backup()
+				cg.DeleteOldFile()
+				<-semaphore
 			}()
 		}
 	}
 	wg.Wait()
-
 }
