@@ -18,7 +18,6 @@ type CopyGroup struct { // {{{
 	dst        string
 	bkpath     string
 	generation int
-	sleep      int
 } // }}}
 
 func makeDstPath(src, bkpath string) (string, error) { // {{{
@@ -41,10 +40,12 @@ func makeDstPath(src, bkpath string) (string, error) { // {{{
 	return dst, e
 } // }}}
 
-func NewCopyGroup(src, bkpath string, generation, sleep int) *CopyGroup { // {{{
+func NewCopyGroup(src, bkpath string, generation int) *CopyGroup { // {{{
+	// core.Logger.Debugf("src = [%s]", src)
 	dst, e := makeDstPath(src, bkpath)
+	// core.Logger.Debugf("dst = [%s]", dst)
 	core.FailOnError(e)
-	return &CopyGroup{src, dst, bkpath, generation, sleep}
+	return &CopyGroup{src, dst, bkpath, generation}
 } // }}}
 
 func (cg *CopyGroup) Backup() error { // {{{
@@ -57,6 +58,8 @@ func (cg *CopyGroup) Backup() error { // {{{
 	if latestFile != "" {
 		l, _ := os.Stat(latestFile)
 		s, _ := os.Stat(cg.src)
+		core.Logger.Debugf("src = [%s], time = [%s]", s.Name(), s.ModTime().Format(time.StampMilli))
+		core.Logger.Debugf("latestFile = [%s], time = [%s]", l.Name(), l.ModTime().Format(time.StampMilli))
 		if l.ModTime().Equal(s.ModTime()) {
 			core.Logger.Debugf("[%s] is same as [%s]", cg.src, latestFile)
 			return nil
@@ -116,12 +119,13 @@ func (cg *CopyGroup) getLatestFile() (string, error) { // {{{
 		return "", nil
 	}
 
-	latestFile = files[0]
 	for _, file := range files {
 		m, e := regexp.MatchString(matchs, file.Name())
 		core.FailOnError(e)
 		if m {
-			if latestFile.ModTime().Before(file.ModTime()) {
+			if latestFile == nil {
+				latestFile = file
+			} else if latestFile.ModTime().Before(file.ModTime()) {
 				latestFile = file
 			}
 		}
@@ -145,12 +149,13 @@ func (cg *CopyGroup) getOldestFile() (string, error) { // {{{
 		return "", nil
 	}
 
-	oldestFile = files[0]
 	for _, file := range files {
 		m, e := regexp.MatchString(matchs, file.Name())
 		core.FailOnError(e)
 		if m {
-			if oldestFile.ModTime().After(file.ModTime()) {
+			if oldestFile == nil {
+				oldestFile = file
+			} else if oldestFile.ModTime().After(file.ModTime()) {
 				oldestFile = file
 			}
 		}
