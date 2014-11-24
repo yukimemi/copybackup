@@ -130,7 +130,12 @@ func (cg *CopyGroup) getLatestFile() (string, error) { // {{{
 			}
 		}
 	}
-	return filepath.Join(dstDir, latestFile.Name()), e
+
+	if latestFile == nil {
+		return "", nil
+	} else {
+		return filepath.Join(dstDir, latestFile.Name()), e
+	}
 } // }}}
 
 func (cg *CopyGroup) getOldestFile() (string, error) { // {{{
@@ -160,7 +165,11 @@ func (cg *CopyGroup) getOldestFile() (string, error) { // {{{
 			}
 		}
 	}
-	return filepath.Join(dstDir, oldestFile.Name()), e
+	if oldestFile == nil {
+		return "", nil
+	} else {
+		return filepath.Join(dstDir, oldestFile.Name()), e
+	}
 } // }}}
 
 func cp(dst, src string) error { // {{{

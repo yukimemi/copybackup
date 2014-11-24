@@ -23,6 +23,7 @@ _testmain.go
 *.test
 
 _old/
+*.csv
 
 # godep
 Godeps/Readme
