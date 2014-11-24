@@ -1,19 +1,34 @@
 {
 	"ImportPath": "github.com/yukimemi/copybackup",
-	"GoVersion": "go1.3",
+	"GoVersion": "go1.3.3",
 	"Deps": [
-		{
-			"ImportPath": "github.com/jessevdk/go-flags",
-			"Comment": "v1-211-g7dff25f",
-			"Rev": "7dff25ff3dc42258f880b5388ac9251bc54be0bb"
-		},
 		{
 			"ImportPath": "github.com/umisama/golog",
 			"Rev": "4ebae395687aca5427e6ac844c38cf0ca033e8c3"
 		},
 		{
 			"ImportPath": "github.com/yukimemi/gocore",
-			"Rev": "fad31d4d88390b3fd639ed4a0e478843ab93d8ba"
+			"Rev": "f060cb9e87841787a315aa931830b654173e5e0d"
+		},
+		{
+			"ImportPath": "golang.org/x/text/transform",
+			"Comment": "null-110",
+			"Rev": "0889d09ee5fcce3409a6cee813e60fc74d46374c"
+		},
+		{
+			"ImportPath": "github.com/jessevdk/go-flags",
+			"Comment": "v1-257-gef51ed2",
+			"Rev": "ef51ed2000ee1721c7153e958511907b844b4a9c"
+		},
+		{
+			"ImportPath": "golang.org/x/text/encoding",
+			"Comment": "null-110",
+			"Rev": "0889d09ee5fcce3409a6cee813e60fc74d46374c"
+		},
+		{
+			"ImportPath": "golang.org/x/text/transform",
+			"Comment": "null-110",
+			"Rev": "0889d09ee5fcce3409a6cee813e60fc74d46374c"
 		}
 	]
 }
